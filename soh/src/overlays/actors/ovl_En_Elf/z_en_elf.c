@@ -635,8 +635,28 @@ void func_80A0329C(EnElf* this, PlayState* play) {
 
         if ((heightDiff > 0.0f) && (heightDiff < 60.0f)) {
             if (!func_80A01F90(&this->actor.world.pos, &refActor->actor.world.pos, 10.0f)) {
+<<<<<<< HEAD
                 if (GameInteractor_Should(VB_FAIRY_HEAL, true, this)) {
                     Health_ChangeBy(play, 128);
+=======
+                if (CVarGetInteger(CVAR_ENHANCEMENT("FairyEffect"), 0) && !(this->fairyFlags & FAIRY_FLAG_BIG))
+                {
+                    if (CVarGetInteger(CVAR_ENHANCEMENT("FairyPercentRestore"), 0))
+                    {
+                        s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+                        Health_ChangeBy(play, heartUnits + ((gSaveContext.healthCapacity2 - heartUnits) *  CVarGetInteger(CVAR_ENHANCEMENT("FairyHealth"), 100) / 100));
+                    }
+                    else
+                    {
+                        s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+                        Health_ChangeBy(play, CVarGetInteger(CVAR_ENHANCEMENT("FairyHealth"), 8) * heartUnits);
+                    }
+                }
+                else
+                {
+                    s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+                    Health_ChangeBy(play, 8 * heartUnits);
+>>>>>>> pr/1
                 }
                 if (this->fairyFlags & FAIRY_FLAG_BIG) {
                     Magic_Fill(play);

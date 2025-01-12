@@ -2341,19 +2341,24 @@ u8 Item_Give(PlayState* play, u8 item) {
         gSaveContext.sohStats.heartPieces++;
         return Return_Item(item, MOD_NONE, ITEM_NONE);
     } else if (item == ITEM_HEART_CONTAINER) {
+        s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
         if (!CVarGetInteger(CVAR_ENHANCEMENT("HurtContainer"), 0)) {
             gSaveContext.healthCapacity += 0x10;
-            gSaveContext.health += 0x10;
+            gSaveContext.health += heartUnits;
         } else {
             gSaveContext.healthCapacity -= 0x10;
-            gSaveContext.health -= 0x10;
+            gSaveContext.health -= heartUnits;
+        }
+        if (play != NULL) {
+            Actor_RefreshLeveledStats(&GET_PLAYER(play)->actor, GET_PLAYER(play));
         }
         gSaveContext.sohStats.heartContainers++;
         return Return_Item(item, MOD_NONE, ITEM_NONE);
     } else if (item == ITEM_HEART) {
         osSyncPrintf("回復ハート回復ハート回復ハート\n"); // "Recovery Heart"
         if (play != NULL) {
-            Health_ChangeBy(play, 0x10);
+            s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+            Health_ChangeBy(play, heartUnits);
         }
         return Return_Item(item, MOD_NONE, item);
     } else if (item == ITEM_MAGIC_SMALL) {
@@ -2477,6 +2482,264 @@ u8 Item_Give(PlayState* play, u8 item) {
     return Return_Item(item, MOD_NONE, returnItem);
 }
 
+<<<<<<< HEAD
+=======
+u16 Randomizer_Item_Give(PlayState* play, GetItemEntry giEntry) {
+    uint16_t item = giEntry.getItemId;
+    uint16_t temp;
+    uint16_t i;
+    uint16_t slot;
+
+    // Gameplay stats: Update the time the item was obtained
+    Randomizer_GameplayStats_SetTimestamp(item);
+
+    slot = SLOT(item);
+    if (item == RG_MAGIC_SINGLE) {
+        gSaveContext.isMagicAcquired = true;
+        gSaveContext.magicFillTarget = gSaveContext.magicUnits;
+        Magic_Fill(play);
+        return Return_Item_Entry(giEntry, RG_NONE);
+    } else if (item == RG_MAGIC_DOUBLE) {
+        if (!gSaveContext.isMagicAcquired) {
+            gSaveContext.isMagicAcquired = true;
+        }
+        gSaveContext.isDoubleMagicAcquired = true;
+        gSaveContext.magicFillTarget = gSaveContext.magicUnits * 2;
+        gSaveContext.magicLevel = 0;
+        Magic_Fill(play);
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_MAGIC_BEAN_PACK) {
+        if (INV_CONTENT(ITEM_BEAN) == ITEM_NONE) {
+            INV_CONTENT(ITEM_BEAN) = ITEM_BEAN;
+            AMMO(ITEM_BEAN) = 10;
+        }
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_DOUBLE_DEFENSE) {
+        gSaveContext.isDoubleDefenseAcquired = true;
+        gSaveContext.inventory.defenseHearts = 20;
+        gSaveContext.healthAccumulator = gSaveContext.healthCapacity2;
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item >= RG_BOTTLE_WITH_RED_POTION && item <= RG_BOTTLE_WITH_BIG_POE) {
+        temp = SLOT(ITEM_BOTTLE);
+        for (i = 0; i < 4; i++) {
+            if (gSaveContext.inventory.items[temp + i] == ITEM_NONE) {
+                switch (item) {
+                    case RG_BOTTLE_WITH_RED_POTION:
+                        item = ITEM_POTION_RED;
+                        break;
+                    case RG_BOTTLE_WITH_GREEN_POTION:
+                        item = ITEM_POTION_GREEN;
+                        break;
+                    case RG_BOTTLE_WITH_BLUE_POTION:
+                        item = ITEM_POTION_BLUE;
+                        break;
+                    case RG_BOTTLE_WITH_FAIRY:
+                        item = ITEM_FAIRY;
+                        break;
+                    case RG_BOTTLE_WITH_FISH:
+                        item = ITEM_FISH;
+                        break;
+                    case RG_BOTTLE_WITH_BLUE_FIRE:
+                        item = ITEM_BLUE_FIRE;
+                        break;
+                    case RG_BOTTLE_WITH_BUGS:
+                        item = ITEM_BUG;
+                        break;
+                    case RG_BOTTLE_WITH_POE:
+                        item = ITEM_POE;
+                        break;
+                    case RG_BOTTLE_WITH_BIG_POE:
+                        item = ITEM_BIG_POE;
+                        break;
+                }
+
+                gSaveContext.inventory.items[temp + i] = item;
+                return Return_Item_Entry(giEntry, RG_NONE);
+            }
+        }
+    } else if ((item >= RG_FOREST_TEMPLE_SMALL_KEY && item <= RG_GANONS_CASTLE_SMALL_KEY) ||
+                (item >= RG_FOREST_TEMPLE_KEY_RING && item <= RG_GANONS_CASTLE_KEY_RING) ||
+                (item >= RG_FOREST_TEMPLE_BOSS_KEY && item <= RG_GANONS_CASTLE_BOSS_KEY) ||
+                (item >= RG_DEKU_TREE_MAP && item <= RG_ICE_CAVERN_MAP) ||
+                (item >= RG_DEKU_TREE_COMPASS && item <= RG_ICE_CAVERN_COMPASS)) {
+        int mapIndex = gSaveContext.mapIndex;
+        int numOfKeysOnKeyring = 0;
+        switch (item) {
+            case RG_DEKU_TREE_MAP:
+            case RG_DEKU_TREE_COMPASS:
+                mapIndex = SCENE_DEKU_TREE;
+                break;
+            case RG_DODONGOS_CAVERN_MAP:
+            case RG_DODONGOS_CAVERN_COMPASS:
+                mapIndex = SCENE_DODONGOS_CAVERN;
+                break;
+            case RG_JABU_JABUS_BELLY_MAP:
+            case RG_JABU_JABUS_BELLY_COMPASS:
+                mapIndex = SCENE_JABU_JABU;
+                break;
+            case RG_FOREST_TEMPLE_MAP:
+            case RG_FOREST_TEMPLE_COMPASS:
+            case RG_FOREST_TEMPLE_SMALL_KEY:
+            case RG_FOREST_TEMPLE_KEY_RING:
+            case RG_FOREST_TEMPLE_BOSS_KEY:
+                mapIndex = SCENE_FOREST_TEMPLE;
+                numOfKeysOnKeyring = FOREST_TEMPLE_SMALL_KEY_MAX;
+                break;
+            case RG_FIRE_TEMPLE_MAP:
+            case RG_FIRE_TEMPLE_COMPASS:
+            case RG_FIRE_TEMPLE_SMALL_KEY:
+            case RG_FIRE_TEMPLE_KEY_RING:
+            case RG_FIRE_TEMPLE_BOSS_KEY:
+                mapIndex = SCENE_FIRE_TEMPLE;
+                numOfKeysOnKeyring = FIRE_TEMPLE_SMALL_KEY_MAX;
+                break;
+            case RG_WATER_TEMPLE_MAP:
+            case RG_WATER_TEMPLE_COMPASS:
+            case RG_WATER_TEMPLE_SMALL_KEY:
+            case RG_WATER_TEMPLE_KEY_RING:
+            case RG_WATER_TEMPLE_BOSS_KEY:
+                mapIndex = SCENE_WATER_TEMPLE;
+                numOfKeysOnKeyring = WATER_TEMPLE_SMALL_KEY_MAX;
+                break;
+            case RG_SPIRIT_TEMPLE_MAP:
+            case RG_SPIRIT_TEMPLE_COMPASS:
+            case RG_SPIRIT_TEMPLE_SMALL_KEY:
+            case RG_SPIRIT_TEMPLE_KEY_RING:
+            case RG_SPIRIT_TEMPLE_BOSS_KEY:
+                mapIndex = SCENE_SPIRIT_TEMPLE;
+                numOfKeysOnKeyring = SPIRIT_TEMPLE_SMALL_KEY_MAX;
+                break;
+            case RG_SHADOW_TEMPLE_MAP:
+            case RG_SHADOW_TEMPLE_COMPASS:
+            case RG_SHADOW_TEMPLE_SMALL_KEY:
+            case RG_SHADOW_TEMPLE_KEY_RING:
+            case RG_SHADOW_TEMPLE_BOSS_KEY:
+                mapIndex = SCENE_SHADOW_TEMPLE;
+                numOfKeysOnKeyring = SHADOW_TEMPLE_SMALL_KEY_MAX;
+                break;
+            case RG_BOTTOM_OF_THE_WELL_MAP:
+            case RG_BOTTOM_OF_THE_WELL_COMPASS:
+            case RG_BOTTOM_OF_THE_WELL_SMALL_KEY:
+            case RG_BOTTOM_OF_THE_WELL_KEY_RING:
+                mapIndex = SCENE_BOTTOM_OF_THE_WELL;
+                numOfKeysOnKeyring = BOTTOM_OF_THE_WELL_SMALL_KEY_MAX;
+                break;
+            case RG_ICE_CAVERN_MAP:
+            case RG_ICE_CAVERN_COMPASS:
+                mapIndex = SCENE_ICE_CAVERN;
+                break;
+            case RG_GANONS_CASTLE_BOSS_KEY:
+                mapIndex = SCENE_GANONS_TOWER;
+                break;
+            case RG_GERUDO_TRAINING_GROUNDS_SMALL_KEY:
+            case RG_GERUDO_TRAINING_GROUNDS_KEY_RING:
+                mapIndex = SCENE_GERUDO_TRAINING_GROUND;
+                numOfKeysOnKeyring = GERUDO_TRAINING_GROUNDS_SMALL_KEY_MAX;
+                break;
+            case RG_GERUDO_FORTRESS_SMALL_KEY:
+            case RG_GERUDO_FORTRESS_KEY_RING:
+                mapIndex = SCENE_THIEVES_HIDEOUT;
+                numOfKeysOnKeyring = GERUDO_FORTRESS_SMALL_KEY_MAX;
+                break;
+            case RG_GANONS_CASTLE_SMALL_KEY:
+            case RG_GANONS_CASTLE_KEY_RING:
+                mapIndex = SCENE_INSIDE_GANONS_CASTLE;
+                numOfKeysOnKeyring = GANONS_CASTLE_SMALL_KEY_MAX;
+                break;
+        }
+
+        if ((item >= RG_FOREST_TEMPLE_SMALL_KEY) && (item <= RG_GANONS_CASTLE_SMALL_KEY)) {
+            gSaveContext.sohStats.dungeonKeys[mapIndex]++;
+            if (gSaveContext.inventory.dungeonKeys[mapIndex] < 0) {
+                gSaveContext.inventory.dungeonKeys[mapIndex] = 1;
+            } else {
+                gSaveContext.inventory.dungeonKeys[mapIndex]++;
+            }
+            return Return_Item_Entry(giEntry, RG_NONE);
+        } else if ((item >= RG_FOREST_TEMPLE_KEY_RING) && (item <= RG_GANONS_CASTLE_KEY_RING)) {
+            gSaveContext.sohStats.dungeonKeys[mapIndex] = numOfKeysOnKeyring;
+            gSaveContext.inventory.dungeonKeys[mapIndex] = numOfKeysOnKeyring;
+            return Return_Item_Entry(giEntry, RG_NONE);
+        } else {
+            int bitmask;
+            if ((item >= RG_DEKU_TREE_MAP) && (item <= RG_ICE_CAVERN_MAP)) {
+                bitmask = gBitFlags[2];
+            } else if ((item >= RG_DEKU_TREE_COMPASS) && (item <= RG_ICE_CAVERN_COMPASS)) {
+                bitmask = gBitFlags[1];
+            } else {
+                bitmask = gBitFlags[0];
+            }
+
+            gSaveContext.inventory.dungeonItems[mapIndex] |= bitmask;
+            return Return_Item_Entry(giEntry, RG_NONE);
+        }
+    }
+
+    if (item == RG_TYCOON_WALLET) {
+        Inventory_ChangeUpgrade(UPG_WALLET, 3);
+        if (IS_RANDO && Randomizer_GetSettingValue(RSK_FULL_WALLETS)) {
+            Rupees_ChangeBy(999);
+        }
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_GREG_RUPEE) {
+        Rupees_ChangeBy(1);
+        Flags_SetRandomizerInf(RAND_INF_GREG_FOUND);
+        gSaveContext.sohStats.itemTimestamp[TIMESTAMP_FOUND_GREG] = GAMEPLAYSTAT_TOTAL_TIME;
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_TRIFORCE_PIECE) {
+        gSaveContext.triforcePiecesCollected++;
+        GameInteractor_SetTriforceHuntPieceGiven(true);
+
+        // Teleport to credits when goal is reached.
+        if (gSaveContext.triforcePiecesCollected == Randomizer_GetSettingValue(RSK_TRIFORCE_HUNT_PIECES_REQUIRED)) {
+            gSaveContext.sohStats.itemTimestamp[TIMESTAMP_TRIFORCE_COMPLETED] = GAMEPLAYSTAT_TOTAL_TIME;
+            gSaveContext.sohStats.gameComplete = 1;
+            Flags_SetRandomizerInf(RAND_INF_GRANT_GANONS_BOSSKEY);
+            Play_PerformSave(play);
+            GameInteractor_SetTriforceHuntCreditsWarpActive(true);
+        }
+
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_PROGRESSIVE_BOMBCHUS) {
+        if (INV_CONTENT(ITEM_BOMBCHU) == ITEM_NONE) {
+            INV_CONTENT(ITEM_BOMBCHU) = ITEM_BOMBCHU;
+            AMMO(ITEM_BOMBCHU) = 20;
+        } else {
+            AMMO(ITEM_BOMBCHU) += AMMO(ITEM_BOMBCHU) < 5 ? 10 : 5;
+            if (AMMO(ITEM_BOMBCHU) > 50) {
+                AMMO(ITEM_BOMBCHU) = 50;
+            }
+        }
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    if (item == RG_MASTER_SWORD) {
+        if (!CHECK_OWNED_EQUIP(EQUIP_TYPE_SWORD, EQUIP_INV_SWORD_MASTER)) {
+            gSaveContext.inventory.equipment |= gBitFlags[1] << gEquipShifts[EQUIP_TYPE_SWORD];
+        }
+        return Return_Item_Entry(giEntry, RG_NONE);
+    }
+
+    temp = gSaveContext.inventory.items[slot];
+    osSyncPrintf("Item_Register(%d)=%d  %d\n", slot, item, temp);
+    INV_CONTENT(item) = item;
+
+    return temp;
+}
+
+>>>>>>> pr/1
 u8 Item_CheckObtainability(u8 item) {
     s16 i;
     s16 slot = SLOT(item);
@@ -2912,13 +3175,20 @@ s32 Health_ChangeBy(PlayState* play, s16 healthChange) {
         }
     }
 
-    gSaveContext.health += healthChange;
-
-    if (gSaveContext.health > gSaveContext.healthCapacity) {
-        gSaveContext.health = gSaveContext.healthCapacity;
+    if (healthChange < 0) {
+        healthChange = (f32)healthChange * (f32)CVarGetInteger("gLeveled.Difficulty.Player.DamageMultiplier", 4) / 4.0f;
+        if (healthChange >= 0)
+            healthChange = -1;
+        ActorDamageNumber_New(GET_PLAYER(play), -healthChange);
     }
 
-    heartCount = gSaveContext.health % 0x10;
+    gSaveContext.health += healthChange;
+
+    if (gSaveContext.health > gSaveContext.healthCapacity2) {
+        gSaveContext.health = gSaveContext.healthCapacity2;
+    }
+
+    heartCount = gSaveContext.health / CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
 
     healthLevel = heartCount;
     if (heartCount != 0) {
@@ -3055,7 +3325,7 @@ void Inventory_ChangeAmmo(s16 item, s16 ammoChange) {
 void Magic_Fill(PlayState* play) {
     if (gSaveContext.isMagicAcquired) {
         gSaveContext.prevMagicState = gSaveContext.magicState;
-        gSaveContext.magicFillTarget = (gSaveContext.isDoubleMagicAcquired + 1) * MAGIC_NORMAL_METER;
+        gSaveContext.magicFillTarget = (gSaveContext.isDoubleMagicAcquired + 1) * gSaveContext.magicUnits;
         gSaveContext.magicState = MAGIC_STATE_FILL;
     }
 }
@@ -3194,7 +3464,7 @@ void Interface_UpdateMagicBar(PlayState* play) {
 
     switch (gSaveContext.magicState) {
         case MAGIC_STATE_STEP_CAPACITY:
-            temp = gSaveContext.magicLevel * MAGIC_NORMAL_METER;
+            temp = gSaveContext.magicLevel * gSaveContext.magicUnits;
             if (gSaveContext.magicCapacity != temp) {
                 if (gSaveContext.magicCapacity < temp) {
                     gSaveContext.magicCapacity += 8;
@@ -3222,6 +3492,9 @@ void Interface_UpdateMagicBar(PlayState* play) {
 
             // "Storage  MAGIC_NOW=%d (%d)"
             osSyncPrintf("蓄電  MAGIC_NOW=%d (%d)\n", gSaveContext.magic, gSaveContext.magicFillTarget);
+            if (gSaveContext.magicFillTarget > gSaveContext.magicCapacity) {
+                gSaveContext.magicFillTarget = gSaveContext.magicCapacity;
+            }
             if (gSaveContext.magic >= gSaveContext.magicFillTarget) {
                 gSaveContext.magic = gSaveContext.magicFillTarget;
                 gSaveContext.magicState = gSaveContext.prevMagicState;
@@ -3456,7 +3729,7 @@ void Interface_DrawMagicBar(PlayState* play) {
         s16 rMagicBarX;
         s16 PosX_MidEnd;
         s16 rMagicFillX;
-        s32 lineLength = CVarGetInteger(CVAR_COSMETIC("HUD.Hearts.LineLength"), 10);
+        s32 lineLength = CVarGetInteger(CVAR_COSMETIC("HUD.Hearts.LineLength"), 15);
         if (CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosType"), 0) != 0) {
             magicBarY = CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosY"), 0)+Y_Margins;
             if (CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosType"), 0) == 1) {//Anchor Left
@@ -3483,8 +3756,9 @@ void Interface_DrawMagicBar(PlayState* play) {
                 rMagicFillX = -9999;
             } else if (CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosType"), 0) == 5) {//Anchor To life meter
                 magicBarY = R_MAGIC_BAR_SMALL_Y-2 +
-                            magicDrop*(lineLength == 0 ? 0 : (gSaveContext.healthCapacity-1)/(0x10*lineLength)) +
-                            CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosY"), 0) + getHealthMeterYOffset();
+                    magicDrop * (lineLength == 0 ? 0 : (gSaveContext.healthCapacity2 - 1) / 
+                        ((CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2) * lineLength)) +
+                            CVarGetInteger("gMagicBarPosY", 0) + getHealthMeterYOffset();
                 s16 xPushover = CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosX"), 0) + getHealthMeterXOffset() + R_MAGIC_BAR_X-1;
                 PosX_Start = xPushover;
                 rMagicBarX = xPushover;
@@ -3492,9 +3766,11 @@ void Interface_DrawMagicBar(PlayState* play) {
                 rMagicFillX = CVarGetInteger(CVAR_COSMETIC("HUD.MagicBar.PosX"), 0) + getHealthMeterXOffset() + R_MAGIC_FILL_X-1;
             }
         } else {
-            if ((gSaveContext.healthCapacity-1)/0x10 >= lineLength && lineLength != 0) {
+            if ((gSaveContext.healthCapacity2 - 1) / (CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2) >= lineLength &&
+                lineLength != 0) {
                 magicBarY = magicBarY_original_l +
-                            magicDrop*(lineLength == 0 ? 0 : ((gSaveContext.healthCapacity-1)/(0x10*lineLength) - 1));
+                    magicDrop * (lineLength == 0 ? 0 : ((gSaveContext.healthCapacity2 - 1) /
+                        ((CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2) * lineLength) - 1));
             } else {
                 magicBarY = magicBarY_original_s;
             }
@@ -4984,7 +5260,7 @@ void Interface_Draw(PlayState* play) {
     if (pauseCtx->debugState == 0) {
         Interface_InitVertices(play);
         func_8008A994(interfaceCtx);
-        if (fullUi || gSaveContext.health != gSaveContext.healthCapacity) {
+        if (fullUi || gSaveContext.health != gSaveContext.healthCapacity2) {
             HealthMeter_Draw(play);
         }
 
@@ -5213,6 +5489,50 @@ void Interface_Draw(PlayState* play) {
                 gSPMatrix(OVERLAY_DISP++, interfaceCtx->view.projectionPtr, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
             }
 
+            // Draw Damage
+            Actor* currAct = play->actorCtx.actorLists[ACTORCAT_ENEMY].head;
+            if (currAct != NULL) {
+                while (currAct != NULL) {
+                    ActorDamageNumber_Draw(play, currAct);
+                    currAct = currAct->next;
+                }
+            }
+
+            currAct = play->actorCtx.actorLists[ACTORCAT_MISC].head;
+            if (currAct != NULL) {
+                while (currAct != NULL) {
+                    if (currAct->id == ACTOR_EN_REEBA)
+                        ActorDamageNumber_Draw(play, currAct);
+                    currAct = currAct->next;
+                }
+            }
+
+            currAct = play->actorCtx.actorLists[ACTORCAT_NPC].head;
+            if (currAct != NULL) {
+                while (currAct != NULL) {
+                    ActorDamageNumber_Draw(play, currAct);
+                    currAct = currAct->next;
+                }
+            }
+
+            currAct = play->actorCtx.actorLists[ACTORCAT_BOSS].head;
+            if (currAct != NULL) {
+                while (currAct != NULL) {
+                    ActorDamageNumber_Draw(play, currAct);
+                    currAct = currAct->next;
+                }
+            }
+
+            ActorDamageNumber_Draw(play, GET_PLAYER(play));
+
+            // Draw Experience Gain
+
+            ActorExperienceNumber_Draw(play, GET_PLAYER(play));
+
+            // Draw Level Up
+            Actor_LevelUpDraw(play, GET_PLAYER(play));
+
+
             // Render enemy health bar after Z-target to leverage set variables
             if (CVarGetInteger(CVAR_ENHANCEMENT("EnemyHealthBar"), 0)) {
                 Interface_DrawEnemyHealthBar(&play->actorCtx.targetCtx, play);
@@ -5310,6 +5630,8 @@ void Interface_Draw(PlayState* play) {
         }
 
         gDPPipeSync(OVERLAY_DISP++);
+
+        Leveled_Interface_DrawNextLevel(play); // Draw next level
 
         // C-Left Button Icon & Ammo Count
         if (gSaveContext.equips.buttonItems[1] < 0xF0) {
@@ -5713,7 +6035,8 @@ void Interface_Draw(PlayState* play) {
                 case 1:
                     D_8015FFE2 = 20;
                     D_8015FFE0 = 20;
-                    gSaveContext.timer1Value = gSaveContext.health >> 1;
+                    u8 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+                    gSaveContext.timer1Value = (s32)((f32)gSaveContext.health / heartUnits * 8);
                     gSaveContext.timer1State = 2;
                     break;
                 case 2:
@@ -6363,17 +6686,23 @@ void Interface_Update(PlayState* play) {
     Map_Update(play);
 
     if (gSaveContext.healthAccumulator != 0) {
-        gSaveContext.healthAccumulator -= 4;
-        gSaveContext.health += 4;
+        s32 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+        gSaveContext.healthAccumulator -= heartUnits >> 2;
+        gSaveContext.health += heartUnits >> 2;
 
+<<<<<<< HEAD
         if ((gSaveContext.health & 0xF) < 4) {
             Audio_PlaySoundGeneral(NA_SE_SY_HP_RECOVER, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+=======
+        if ((gSaveContext.health % (heartUnits)) < heartUnits >> 2) {
+            Audio_PlaySoundGeneral(NA_SE_SY_HP_RECOVER, &D_801333D4, 4, &D_801333E0, &D_801333E0, &D_801333E8);
+>>>>>>> pr/1
         }
 
         osSyncPrintf("now_life=%d  max_life=%d\n", gSaveContext.health, gSaveContext.healthCapacity);
 
-        if (gSaveContext.health >= gSaveContext.healthCapacity) {
-            gSaveContext.health = gSaveContext.healthCapacity;
+        if (gSaveContext.health >= gSaveContext.healthCapacity2) {
+            gSaveContext.health = gSaveContext.healthCapacity2;
             osSyncPrintf("S_Private.now_life=%d  S_Private.max_life=%d\n", gSaveContext.health,
                          gSaveContext.healthCapacity);
             gSaveContext.healthAccumulator = 0;
@@ -6515,7 +6844,8 @@ void Interface_Update(PlayState* play) {
     }
 
     if (gSaveContext.timer1State == 0) {
-        if (((D_80125A58 == 1) || (D_80125A58 == 2) || (D_80125A58 == 4)) && ((gSaveContext.health >> 1) != 0)) {
+        u8 heartUnits = CVarGetInteger("gLeveled.Difficulty.HeartUnits", 4) << 2;
+        if (((D_80125A58 == 1) || (D_80125A58 == 2) || (D_80125A58 == 4)) && (((s32)((f32)gSaveContext.health / heartUnits * 8)) != 0)) {
             gSaveContext.timer1State = 1;
             gSaveContext.timerX[0] = 140;
             gSaveContext.timerY[0] = 80;

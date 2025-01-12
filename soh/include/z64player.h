@@ -886,11 +886,19 @@ typedef struct Player {
     /* 0x089A */ s16 floorPitchAlt; // the calculation for this value is bugged and doesn't represent anything meaningful
     /* 0x089C */ s16 unk_89C;
     /* 0x089E */ u16 floorSfxOffset;
+<<<<<<< HEAD
     /* 0x08A0 */ u8 knockbackDamage;
     /* 0x08A1 */ u8 knockbackType;
     /* 0x08A2 */ s16 knockbackRot;
     /* 0x08A4 */ f32 knockbackSpeed;
     /* 0x08A8 */ f32 knockbackYVelocity;
+=======
+    /* 0x08A0 */ u16 unk_8A0;
+    /* 0x08A1 */ u8 unk_8A1;
+    /* 0x08A2 */ s16 unk_8A2;
+    /* 0x08A4 */ f32 unk_8A4;
+    /* 0x08A8 */ f32 unk_8A8;
+>>>>>>> pr/1
     /* 0x08AC */ f32 pushedSpeed; // Pushing player, examples include water currents, floor conveyors, climbing sloped surfaces
     /* 0x08B0 */ s16 pushedYaw; // Yaw direction of player being pushed
     /* 0x08B4 */ WeaponInfo meleeWeaponInfo[3];

@@ -218,6 +218,7 @@ namespace SohGui {
         gui->AddGuiWindow(mPlandomizerWindow);
         mAdvancedResolutionSettingsWindow = std::make_shared<AdvancedResolutionSettings::AdvancedResolutionSettingsWindow>(CVAR_WINDOW("AdvancedResolutionEditor"), "Advanced Resolution Settings", ImVec2(497, 599));
         gui->AddGuiWindow(mAdvancedResolutionSettingsWindow);
+<<<<<<< HEAD
         mModalWindow = std::make_shared<SohModalWindow>(CVAR_WINDOW("ModalWindow"), "Modal Window");
         gui->AddGuiWindow(mModalWindow);
         mModalWindow->Show();
@@ -226,6 +227,11 @@ namespace SohGui {
         mNotificationWindow->Show();
         mTimeDisplayWindow = std::make_shared<TimeDisplayWindow>(CVAR_WINDOW("TimeDisplayEnabled"), "Additional Timers");
         gui->AddGuiWindow(mTimeDisplayWindow);
+=======
+        //mModalWindow = std::make_shared<SohModalWindow>(CVAR_WINDOW("ModalWindow"), "Modal Window");
+        //gui->AddGuiWindow(mModalWindow);
+        //mModalWindow->Show();
+>>>>>>> pr/1
     }
 
     void Destroy() {

@@ -31,6 +31,8 @@ typedef struct {
     u8 isDoubleDefenseAcquired;
     s32 gregFound;
     s32 hasWallet;
+    u8 gregFound;
+    u8 level;
 } SaveFileMetaInfo;
 
 #ifdef __cplusplus

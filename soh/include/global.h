@@ -9,6 +9,10 @@
 #include "variables.h"
 #include "macros.h"
 #include "soh/cvar_prefixes.h"
+#include "leveled_overlays.h"
+#include "leveled_stat_math.h"
+#include "leveled_actor_level_table.h"
+#include "soh/OTRGlobals.h"
 #include "soh/Enhancements/gameconsole.h"
 #include "soh/Enhancements/gameplaystats.h"
 #include <libultraship/bridge.h>
